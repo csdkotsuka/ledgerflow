@@ -29,6 +29,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { ReceiptUpload } from '@/components/receipt-upload'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type Account = { id: string, name: string, code: string }
 type Transaction = {
@@ -53,6 +55,8 @@ export default function TransactionsPage() {
     const [debitAccountId, setDebitAccountId] = useState('')
     const [creditAccountId, setCreditAccountId] = useState('')
     const [amount, setAmount] = useState('') // Simple single amount as they must match
+    const [receiptUrl, setReceiptUrl] = useState('')
+    const [vendor, setVendor] = useState('')
 
     useEffect(() => {
         fetchTransactions()
@@ -79,6 +83,40 @@ export default function TransactionsPage() {
         if (error) console.error('Error fetching transactions:', error)
         else setTransactions(data as any || [])
         setLoading(false)
+    }
+
+    async function handleFileUpload(file: File): Promise<string> {
+        const fileName = `${TEMP_USER_ID}/${Date.now()}_${file.name}`
+        const { data, error } = await supabase.storage
+            .from('receipts')
+            .upload(fileName, file)
+
+        if (error) throw error
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('receipts')
+            .getPublicUrl(fileName)
+
+        return publicUrl
+    }
+
+    function handleOCRComplete(data: any) {
+        // Auto-fill form with OCR data
+        if (data.date) {
+            setDate(new Date(data.date))
+        }
+        if (data.amount) {
+            setAmount(data.amount.toString())
+        }
+        if (data.vendor) {
+            setVendor(data.vendor)
+        }
+        if (data.description) {
+            setDescription(data.description)
+        }
+        if (data.receiptUrl) {
+            setReceiptUrl(data.receiptUrl)
+        }
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -114,12 +152,13 @@ export default function TransactionsPage() {
         const { error } = await supabase.from('transactions').insert({
             user_id: TEMP_USER_ID,
             transaction_date: dateStr,
-            description,
+            description: description || vendor,
             debit_account_id: debitAccountId,
             credit_account_id: creditAccountId,
             debit_amount: val,
             credit_amount: val,
             fiscal_year_id: fyData.id,
+            receipt_url: receiptUrl || null,
             // Assuming no tax/sub-account for MVP simplicity unless requested
         })
 
@@ -129,6 +168,8 @@ export default function TransactionsPage() {
             setOpen(false)
             setDescription('')
             setAmount('')
+            setVendor('')
+            setReceiptUrl('')
             fetchTransactions()
         }
     }
@@ -141,10 +182,25 @@ export default function TransactionsPage() {
                     <DialogTrigger asChild>
                         <Button>+ New Transaction</Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px]">
+                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>New Transaction</DialogTitle>
                         </DialogHeader>
+                        <Tabs defaultValue="manual" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+                                <TabsTrigger value="receipt">Upload Receipt</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="receipt" className="mt-4">
+                                <ReceiptUpload
+                                    onOCRComplete={handleOCRComplete}
+                                    onFileUpload={handleFileUpload}
+                                />
+                            </TabsContent>
+                            <TabsContent value="manual">
+                                {/* Manual form content */}
+                            </TabsContent>
+                        </Tabs>
                         <form onSubmit={handleSubmit} className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 flex flex-col">
@@ -207,9 +263,15 @@ export default function TransactionsPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Description</Label>
-                                <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Transaction description" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Vendor (from receipt)</Label>
+                                    <Input value={vendor} onChange={e => setVendor(e.target.value)} placeholder="Vendor name" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Description</Label>
+                                    <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Transaction description" />
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-2 mt-4">
