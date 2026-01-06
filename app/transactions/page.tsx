@@ -1,5 +1,8 @@
 'use client'
 
+// TODO: Remove this when authentication is implemented
+const TEMP_USER_ID = '00000000-0000-0000-0000-000000000000'
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -89,12 +92,6 @@ export default function TransactionsPage() {
             return
         }
 
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            alert('Please log in')
-            return
-        }
-
         // Find Fiscal Year (Simplified: Create one if needed or find existing)
         // For this MVP, we need a fiscal year. I'll search for one covering the date.
         // If not found, I'll error out (User should create one in settings).
@@ -115,7 +112,7 @@ export default function TransactionsPage() {
         const val = parseFloat(amount)
 
         const { error } = await supabase.from('transactions').insert({
-            user_id: user.id,
+            user_id: TEMP_USER_ID,
             transaction_date: dateStr,
             description,
             debit_account_id: debitAccountId,

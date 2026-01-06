@@ -1,5 +1,8 @@
 'use client'
 
+// TODO: Remove this when authentication is implemented
+const TEMP_USER_ID = '00000000-0000-0000-0000-000000000000'
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -25,11 +28,9 @@ export default function SettingsPage() {
 
     async function handleCreate(e: React.FormEvent) {
         e.preventDefault()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return alert('Please login')
 
         const { error } = await supabase.from('fiscal_years').insert({
-            user_id: user.id,
+            user_id: TEMP_USER_ID,
             name,
             start_date: startDate,
             end_date: endDate
