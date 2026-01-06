@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
             .replace(/^data:application\/pdf;base64,/, '')
 
         // Get Gemini model
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' })
 
         // Create prompt for receipt data extraction
         const prompt = `あなたは領収書から情報を抽出する専門家です。
