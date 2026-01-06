@@ -84,7 +84,7 @@ export default function DashboardPage() {
         transactionCount: transactions?.length || 0,
       })
 
-      setRecentTransactions((transactions || []).slice(0, 5) as RecentTransaction[])
+      setRecentTransactions((transactions || []).slice(0, 5) as any as RecentTransaction[])
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
