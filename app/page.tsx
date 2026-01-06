@@ -19,8 +19,8 @@ type RecentTransaction = {
   description: string
   debit_amount: number
   credit_amount: number
-  debit_account: { name: string, account_type: string }
-  credit_account: { name: string, account_type: string }
+  debit_account: { name: string, type: string }
+  credit_account: { name: string, type: string }
 }
 
 export default function DashboardPage() {
@@ -48,8 +48,8 @@ export default function DashboardPage() {
           description,
           debit_amount,
           credit_amount,
-          debit_account:accounts!transactions_debit_account_id_fkey(name, account_type),
-          credit_account:accounts!transactions_credit_account_id_fkey(name, account_type)
+          debit_account:accounts!transactions_debit_account_id_fkey(name, type),
+          credit_account:accounts!transactions_credit_account_id_fkey(name, type)
         `)
         .order('transaction_date', { ascending: false })
 
@@ -67,12 +67,12 @@ export default function DashboardPage() {
       let expenses = 0
 
       transactions?.forEach((tx: any) => {
-        // Revenue: credit to revenue accounts (account_type = 'REVENUE')
-        if (tx.credit_account?.account_type === 'REVENUE') {
+        // Revenue: credit to revenue accounts (type = 'REVENUE')
+        if (tx.credit_account?.type === 'REVENUE') {
           revenue += tx.credit_amount || 0
         }
-        // Expenses: debit to expense accounts (account_type = 'EXPENSE')
-        if (tx.debit_account?.account_type === 'EXPENSE') {
+        // Expenses: debit to expense accounts (type = 'EXPENSE')
+        if (tx.debit_account?.type === 'EXPENSE') {
           expenses += tx.debit_amount || 0
         }
       })
